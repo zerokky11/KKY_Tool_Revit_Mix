@@ -36,19 +36,16 @@ Namespace Services
             End If
             Dim doc = uidoc.Document
 
-            ' 대상: 커넥터가 있을 법한 주요 MEP 요소 + 기계/전기 패밀리(패밀리 인스턴스)
+            Dim allElems = New FilteredElementCollector(doc) _
+                               .WhereElementIsNotElementType() _
+                               .ToElements()
+
             Dim elems As New List(Of Element)()
-
-            elems.AddRange(New FilteredElementCollector(doc) _
-                           .OfClass(GetType(MEPCurve)) _
-                           .WhereElementIsNotElementType() _
-                           .ToElements())
-
-            elems.AddRange(New FilteredElementCollector(doc) _
-                           .OfClass(GetType(FamilyInstance)) _
-                           .WhereElementIsNotElementType() _
-                           .ToElements() _
-                           .Where(Function(fi) HasAnyConnector(fi)))
+            For Each e In allElems
+                If IsRealBuiltElement(e) Then
+                    elems.Add(e)
+                End If
+            Next
 
             ' 그룹핑 키 생성
             Dim groups As New Dictionary(Of String, List(Of Element))(StringComparer.Ordinal)
@@ -77,11 +74,13 @@ Namespace Services
                         typ = If(fi.Symbol IsNot Nothing, fi.Symbol.Name, "")
                         fam = If(fi.Symbol IsNot Nothing AndAlso fi.Symbol.Family IsNot Nothing, fi.Symbol.Family.Name, "")
                     Else
-                        ' MEPCurve
                         typ = e.Name
                         Dim es = TryCast(doc.GetElement(e.GetTypeId()), ElementType)
                         If es IsNot Nothing Then
                             fam = es.FamilyName
+                            If String.IsNullOrEmpty(typ) Then
+                                typ = es.Name
+                            End If
                         End If
                     End If
 
@@ -130,20 +129,41 @@ Namespace Services
 
         ' ====== 내부 유틸 ======
 
-        Private Shared Function HasAnyConnector(e As Element) As Boolean
-            Try
-                If TypeOf e Is MEPCurve Then
-                    Dim cm = DirectCast(e, MEPCurve).ConnectorManager
-                    Return cm IsNot Nothing AndAlso cm.Connectors IsNot Nothing AndAlso cm.Connectors.Size > 0
-                End If
-                Dim fi = TryCast(e, FamilyInstance)
-                If fi IsNot Nothing AndAlso fi.MEPModel IsNot Nothing AndAlso fi.MEPModel.ConnectorManager IsNot Nothing Then
-                    Dim cms = fi.MEPModel.ConnectorManager.Connectors
-                    Return cms IsNot Nothing AndAlso cms.Size > 0
-                End If
-            Catch
-            End Try
-            Return False
+        Private Shared Function IsRealBuiltElement(e As Element) As Boolean
+            If e Is Nothing Then Return False
+            Dim cat = e.Category
+            If cat Is Nothing Then Return False
+            If cat.CategoryType <> CategoryType.Model Then Return False
+
+            Dim bic As BuiltInCategory = CType(cat.Id.IntegerValue, BuiltInCategory)
+            Select Case bic
+                Case BuiltInCategory.OST_Levels,
+                     BuiltInCategory.OST_Grids,
+                     BuiltInCategory.OST_ReferencePlanes,
+                     BuiltInCategory.OST_ScopeBoxes,
+                     BuiltInCategory.OST_CLines,
+                     BuiltInCategory.OST_TextNotes,
+                     BuiltInCategory.OST_Dimensions,
+                     BuiltInCategory.OST_GenericAnnotation,
+                     BuiltInCategory.OST_DetailComponents,
+                     BuiltInCategory.OST_DetailLines,
+                     BuiltInCategory.OST_RoomTags,
+                     BuiltInCategory.OST_SpaceTags,
+                     BuiltInCategory.OST_AreaTags,
+                     BuiltInCategory.OST_SectionLine,
+                     BuiltInCategory.OST_ReferenceLines,
+                     BuiltInCategory.OST_ReferencePoints,
+                     BuiltInCategory.OST_Viewers,
+                     BuiltInCategory.OST_Sheets,
+                     BuiltInCategory.OST_Views
+                    Return False
+            End Select
+
+            If cat.Name IsNot Nothing AndAlso cat.Name.ToLowerInvariant().Contains("analytical") Then
+                Return False
+            End If
+
+            Return True
         End Function
 
         ''' <summary>요소의 위치 기반 그룹 키. 방향성/자릿수 차이로 인한 미세 오차 대비하여 반올림 처리.</summary>
@@ -163,32 +183,41 @@ Namespace Services
                     Return $"{cat}|{fam}|{typ}|NOLOC"
                 End If
                 Dim p = lp.Point
-                Dim keyp = $"{R2(p.X)}_{R2(p.Y)}_{R2(p.Z)}"
-                Return $"{cat}|{fam}|{typ}|{keyp}"
+                Dim keyp = $"{R4(p.X)}_{R4(p.Y)}_{R4(p.Z)}"
+                Dim ang As Double = 0.0
+                Try
+                    ang = lp.Rotation
+                Catch
+                End Try
+                Dim keyAng = R4(ang)
+                Return $"{cat}|{fam}|{typ}|P|{keyp}|A|{keyAng}"
             Else
-                ' MEPCurve
                 typ = e.Name
                 Dim es = TryCast(doc.GetElement(e.GetTypeId()), ElementType)
-                If es IsNot Nothing Then fam = es.FamilyName
+                If es IsNot Nothing Then
+                    fam = es.FamilyName
+                    If String.IsNullOrEmpty(typ) Then
+                        typ = es.Name
+                    End If
+                End If
 
                 Dim lc = TryCast(e.Location, LocationCurve)
                 If lc Is Nothing OrElse lc.Curve Is Nothing Then
-                    Return $"{cat}|{fam}|{typ}|NOCURVE"
+                    Return $"{cat}|{fam}|{typ}|NOLOC"
                 End If
                 Dim c = lc.Curve
                 Dim s = c.GetEndPoint(0)
                 Dim t = c.GetEndPoint(1)
-                ' 방향성 제거 위해 소트
-                Dim k1 = $"{R2(s.X)}_{R2(s.Y)}_{R2(s.Z)}"
-                Dim k2 = $"{R2(t.X)}_{R2(t.Y)}_{R2(t.Z)}"
-                Dim a = New String() {k1, k2}
-                Array.Sort(a, StringComparer.Ordinal)
-                Return $"{cat}|{fam}|{typ}|{a(0)}|{a(1)}"
+
+                Dim keyS = $"{R4(s.X)}_{R4(s.Y)}_{R4(s.Z)}"
+                Dim keyT = $"{R4(t.X)}_{R4(t.Y)}_{R4(t.Z)}"
+
+                Return $"{cat}|{fam}|{typ}|C|{keyS}|{keyT}"
             End If
         End Function
 
         ''' <summary>피트 단위를 소수점 4자리까지 반올림한 문자열</summary>
-        Private Shared Function R2(v As Double) As String
+        Private Shared Function R4(v As Double) As String
             ' 1e-4 ft ≈ 0.3048 mm — 중복 판단엔 충분
             Return Math.Round(v, 4, MidpointRounding.AwayFromZero).ToString("0.####")
         End Function
