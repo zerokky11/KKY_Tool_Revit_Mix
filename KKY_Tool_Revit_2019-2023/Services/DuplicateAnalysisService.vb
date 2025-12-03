@@ -8,6 +8,7 @@ Imports Autodesk.Revit.DB.Plumbing
 Imports Autodesk.Revit.DB.Electrical
 Imports Autodesk.Revit.UI
 Imports Infrastructure   ' ElementIdCompat helpers 사용
+Imports KKY_Tool_Revit.Infrastructure
 
 
 Namespace Services
