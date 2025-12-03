@@ -44,11 +44,19 @@ Namespace Global.Autodesk.Revit.DB
             Return ToBuiltInGroup(groupId)
         End Function
 
+        Public Function GetGroup(def As Definition) As BuiltInParameterGroup
+            If def Is Nothing Then
+                Return BuiltInParameterGroup.PG_DATA
+            End If
+
+            Return ToBuiltInGroup(def.GetGroupTypeId())
+        End Function
+
         <Extension>
         Public Function IsInGroup(def As Definition, group As BuiltInParameterGroup) As Boolean
             If def Is Nothing Then Return False
 
-            Return ToBuiltInGroup(def.GetGroupTypeId()) = group
+            Return GetGroup(def) = group
         End Function
 
         Private Function MapGroup(group As BuiltInParameterGroup) As ForgeTypeId

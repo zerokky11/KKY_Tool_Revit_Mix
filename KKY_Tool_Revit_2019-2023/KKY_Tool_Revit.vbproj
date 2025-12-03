@@ -110,6 +110,7 @@
 		<Compile Include="Exports\PointsExport.vb" />
 		<Compile Include="Exports\ConnectorExport.vb" />
 		<Compile Include="Exports\DuplicateExport.vb" />
+		<Compile Include="Infrastructure\BuiltInParameterGroupCompat.vb" />
 		<Compile Include="Infrastructure\ElementIdCompat.vb" />
 		<Compile Include="Infrastructure\ResourceExtractor.vb" />
 		<Compile Include="Infrastructure\ExcelCore.vb" />

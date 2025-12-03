@@ -9,7 +9,9 @@ Imports WinForms = System.Windows.Forms
 Imports Autodesk.Revit.ApplicationServices
 Imports Autodesk.Revit.DB
 Imports Autodesk.Revit.UI
-
+Imports KKY_Tool_Revit.Infrastructure
+Imports Services
+Imports Infrastructure
 Namespace Services
 
     '==================== 공용: 로드 옵션 ====================
@@ -108,7 +110,7 @@ Namespace Services
         Public Function IsFamilyShared(ownerDocCanEdit As Document, fam As Family) As Boolean
             If fam Is Nothing Then Return False
 
-            Dim key As Integer = fam.Id.IntegerValue
+            Dim key As Integer = ElementIdCompat.GetIntId(fam.Id)
             Dim cached As Boolean
             If _cache.TryGetValue(key, cached) Then Return cached
 
@@ -1327,15 +1329,9 @@ Namespace Services
                 fm.Parameters.Cast(Of FamilyParameter)().
                 FirstOrDefault(Function(x) x.Definition IsNot Nothing AndAlso
                                            String.Equals(x.Definition.Name, extDef.Name, StringComparison.OrdinalIgnoreCase))
-#If REVIT2025 Then
             Dim okNow As Boolean =
                 (corrected IsNot Nothing AndAlso corrected.IsShared AndAlso
                  BuiltInParameterGroupCompat.IsInGroup(corrected.Definition, groupPG))
-#Else
-            Dim okNow As Boolean =
-                (corrected IsNot Nothing AndAlso corrected.IsShared AndAlso
-                 corrected.Definition.ParameterGroup = groupPG)
-#End If
 
             If okNow AndAlso Not replaceFailed Then
                 result.FinalOk = True
@@ -1369,13 +1365,8 @@ Namespace Services
                 FirstOrDefault(Function(x) x.Definition IsNot Nothing AndAlso
                                            x.IsShared AndAlso
                                            String.Equals(x.Definition.Name, extDef.Name, StringComparison.OrdinalIgnoreCase))
-#If REVIT2025 Then
             result.FinalOk = (corrected IsNot Nothing AndAlso
                               BuiltInParameterGroupCompat.IsInGroup(corrected.Definition, groupPG))
-#Else
-            result.FinalOk = (corrected IsNot Nothing AndAlso
-                              corrected.Definition.ParameterGroup = groupPG)
-#End If
             Return result
         End Function
 
@@ -1406,6 +1397,7 @@ Namespace Services
                         ToList()
 
             For Each fi In insts
+                Dim fiId As Integer = ElementIdCompat.GetIntId(fi.Id)
                 Dim childF As Family = Nothing
                 Try
                     Dim sym As FamilySymbol = TryCast(hostDoc.GetElement(fi.Symbol.Id), FamilySymbol)
@@ -1413,11 +1405,11 @@ Namespace Services
                     childF = sym.Family
                 Catch ex As Autodesk.Revit.Exceptions.InvalidObjectException
                     failCnt += 1
-                    fails.Add($"{fi.Id.IntegerValue}:(verify-exception: {ex.Message})")
+                    fails.Add($"{fiId}:(verify-exception: {ex.Message})")
                     Continue For
                 Catch ex As Exception
                     failCnt += 1
-                    fails.Add($"{fi.Id.IntegerValue}:(verify-exception: {ex.Message})")
+                    fails.Add($"{fiId}:(verify-exception: {ex.Message})")
                     Continue For
                 End Try
 
@@ -1436,7 +1428,7 @@ Namespace Services
                         Dim hostParam As FamilyParameter = Nothing
                         If Not hostParams.TryGetValue(name, hostParam) OrElse hostParam Is Nothing Then
                             failCnt += 1
-                            fails.Add($"{fi.Id.IntegerValue}:{name} (host-missing)")
+                            fails.Add($"{fiId}:{name} (host-missing)")
                             Continue For
                         End If
 
@@ -1445,17 +1437,17 @@ Namespace Services
                             p = TryGetElementParameterByName(fi, name)
                         Catch ex As Autodesk.Revit.Exceptions.InvalidObjectException
                             failCnt += 1
-                            fails.Add($"{fi.Id.IntegerValue}:{name} (verify-exception: {ex.Message})")
+                            fails.Add($"{fiId}:{name} (verify-exception: {ex.Message})")
                             Continue For
                         Catch ex As Exception
                             failCnt += 1
-                            fails.Add($"{fi.Id.IntegerValue}:{name} (verify-exception: {ex.Message})")
+                            fails.Add($"{fiId}:{name} (verify-exception: {ex.Message})")
                             Continue For
                         End Try
 
                         If p Is Nothing Then
                             skipCnt += 1
-                            skipItems.Add($"{fi.Id.IntegerValue}:{name} (child-inst-missing)")
+                            skipItems.Add($"{fiId}:{name} (child-inst-missing)")
                             Continue For
                         End If
 
@@ -1464,11 +1456,11 @@ Namespace Services
                             associated = fm.GetAssociatedFamilyParameter(p)
                         Catch ex As Autodesk.Revit.Exceptions.InvalidObjectException
                             failCnt += 1
-                            fails.Add($"{fi.Id.IntegerValue}:{name} (verify-exception: {ex.Message})")
+                            fails.Add($"{fiId}:{name} (verify-exception: {ex.Message})")
                             Continue For
                         Catch ex As Exception
                             failCnt += 1
-                            fails.Add($"{fi.Id.IntegerValue}:{name} (verify-exception: {ex.Message})")
+                            fails.Add($"{fiId}:{name} (verify-exception: {ex.Message})")
                             Continue For
                         End Try
 
@@ -1476,16 +1468,16 @@ Namespace Services
                             okCnt += 1
                         Else
                             failCnt += 1
-                            fails.Add($"{fi.Id.IntegerValue}:{name} (not-associated)")
+                            fails.Add($"{fiId}:{name} (not-associated)")
                         End If
 
                     Catch ex As Autodesk.Revit.Exceptions.InvalidObjectException
                         failCnt += 1
-                        fails.Add($"{fi.Id.IntegerValue}:{name} (verify-exception: {ex.Message})")
+                        fails.Add($"{fiId}:{name} (verify-exception: {ex.Message})")
                         Continue For
                     Catch ex As Exception
                         failCnt += 1
-                        fails.Add($"{fi.Id.IntegerValue}:{name} (verify-exception: {ex.Message})")
+                        fails.Add($"{fiId}:{name} (verify-exception: {ex.Message})")
                         Continue For
                     End Try
                 Next

@@ -8,7 +8,12 @@ Imports Autodesk.Revit.UI.Events
 Imports System.Linq
 Imports KKY_Tool_Revit.UI
 Imports KKY_Tool_Revit.UI.Hub
+Imports Services
+Imports Infrastructure
 '커밋 확인용'
+#If REVIT2025 Then
+Imports HubHostWindow = UI.Hub.HubHostWindow
+#End If
 Namespace KKY_Tool_Revit
     Public Class App
         Implements IExternalApplication

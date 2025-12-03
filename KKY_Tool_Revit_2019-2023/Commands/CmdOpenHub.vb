@@ -5,6 +5,9 @@ Imports Autodesk.Revit.Attributes
 Imports Autodesk.Revit.DB
 Imports Autodesk.Revit.UI
 Imports KKY_Tool_Revit.UI.Hub
+#If REVIT2025 Then
+Imports HubHostWindow = UI.Hub.HubHostWindow
+#End If
 ' ʿϸ ӽ̽  :
 'Imports KKY_Tool_Revit.UI.Hub
 ' Ǵ Ʈ UiBridgeExternalEvent  Ʈ ӽ̽ Imports

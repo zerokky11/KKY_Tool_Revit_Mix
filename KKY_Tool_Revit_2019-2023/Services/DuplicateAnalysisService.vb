@@ -7,8 +7,9 @@ Imports Autodesk.Revit.DB.Mechanical
 Imports Autodesk.Revit.DB.Plumbing
 Imports Autodesk.Revit.DB.Electrical
 Imports Autodesk.Revit.UI
-Imports Infrastructure   ' ElementIdCompat.IntValue / FromInt 사용
-
+Imports KKY_Tool_Revit.Infrastructure
+Imports Services
+Imports Infrastructure
 
 Namespace Services
 
@@ -84,12 +85,13 @@ Namespace Services
                         End If
                     End If
 
+                    Dim eid As Integer = ElementIdCompat.GetIntId(e.Id)
                     Dim connected As HashSet(Of Integer) = GetConnectedOwnerIds(e)
                     Dim connectedIdsStr As String = String.Join(",", connected.Select(Function(x) x.ToString()).ToArray())
 
                     Dim d As New Dictionary(Of String, Object)(StringComparer.OrdinalIgnoreCase) From {
                         {"groupId", gno},
-                        {"id", e.Id.IntegerValue.ToString()},
+                        {"id", eid.ToString()},
                         {"category", cat},
                         {"family", fam},
                         {"type", typ},
@@ -194,6 +196,7 @@ Namespace Services
         ''' <summary>요소의 커넥터 기준 연결 상대 ElementId 모음(자기 자신 제외, 중복 제거)</summary>
         Private Shared Function GetConnectedOwnerIds(e As Element) As HashSet(Of Integer)
             Dim setIds As New HashSet(Of Integer)()
+            Dim selfId As Integer = ElementIdCompat.GetIntId(e.Id)
 
             Try
                 Dim cm As ConnectorManager = Nothing
@@ -219,8 +222,8 @@ Namespace Services
                     For Each ro In refs
                         Dim rc As Connector = TryCast(ro, Connector)
                         If rc Is Nothing OrElse rc.Owner Is Nothing Then Continue For
-                        Dim oid As Integer = rc.Owner.Id.IntegerValue
-                        If oid <> e.Id.IntegerValue Then setIds.Add(oid)
+                        Dim oid As Integer = ElementIdCompat.GetIntId(rc.Owner.Id)
+                        If oid <> selfId Then setIds.Add(oid)
                     Next
                 Next
             Catch
