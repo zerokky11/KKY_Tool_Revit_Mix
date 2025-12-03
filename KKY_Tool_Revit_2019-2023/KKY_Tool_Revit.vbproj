@@ -107,12 +107,13 @@
 	<ItemGroup>
 		<Compile Include="APP.vb" />
 		<Compile Include="Commands\CmdOpenHub.vb" />
-		<Compile Include="Exports\PointsExport.vb" />
-		<Compile Include="Exports\ConnectorExport.vb" />
-		<Compile Include="Exports\DuplicateExport.vb" />
-		<Compile Include="Infrastructure\ElementIdCompat.vb" />
-		<Compile Include="Infrastructure\ResourceExtractor.vb" />
-		<Compile Include="Infrastructure\ExcelCore.vb" />
+                <Compile Include="Exports\PointsExport.vb" />
+                <Compile Include="Exports\ConnectorExport.vb" />
+                <Compile Include="Exports\DuplicateExport.vb" />
+                <Compile Include="Infrastructure\BuiltInParameterGroupCompat.vb" />
+                <Compile Include="Infrastructure\ElementIdCompat.vb" />
+                <Compile Include="Infrastructure\ResourceExtractor.vb" />
+                <Compile Include="Infrastructure\ExcelCore.vb" />
 		<Compile Include="Services\DuplicateAnalysisService.vb" />
 		<Compile Include="Services\ConnectorDiagnosticsService.vb" />
 		<Compile Include="Services\ExportPointsService.vb" />

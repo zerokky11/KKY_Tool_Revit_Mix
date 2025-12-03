@@ -73,9 +73,12 @@
 
 	<!-- 코드: 2019-2023 프로젝트 VB 파일을 링크로 공유 + 2025 전용 Compat -->
 	<ItemGroup>
-		<!-- 2025 전용 Compat (이 프로젝트 안에 유지) -->
-		<Compile Include="Compat\JavaScriptSerializer.vb" />
-		<Compile Include="Compat\BuiltInParameterGroupCompat.vb" />
+                <!-- 2025 전용 Compat (이 프로젝트 안에 유지) -->
+                <Compile Include="Compat\JavaScriptSerializer.vb" />
+                <Compile Include="Compat\BuiltInParameterGroupCompat.vb" />
+                <Compile Include="..\KKY_Tool_Revit_2019-2023\Infrastructure\ElementIdCompat.vb">
+                        <Link>Infrastructure\ElementIdCompat.vb</Link>
+                </Compile>
 
 		<!-- 공통 App / Commands (2019-2023에서 링크) -->
 		<Compile Include="..\KKY_Tool_Revit_2019-2023\APP.vb">

@@ -68,7 +68,7 @@ Namespace UI.Hub
                         Dim subs = fi.GetSubComponentIds()
                         If subs Is Nothing Then Continue For
                         For Each sid As ElementId In subs
-                            _nestedSharedIds.Add(sid.IntegerValue)
+                            _nestedSharedIds.Add(ElementIdCompat.GetIntId(sid))
                         Next
                     Catch
                     End Try
@@ -138,6 +138,7 @@ Namespace UI.Hub
                 groupsWithDup += 1
 
                 For Each id As ElementId In ids
+                    Dim idInt As Integer = ElementIdCompat.GetIntId(id)
                     Dim e As Element = doc.GetElement(id)
                     If e Is Nothing Then Continue For
 
@@ -146,12 +147,12 @@ Namespace UI.Hub
                     Dim typName As String = SafeTypeName(e, typCache)
 
                     Dim connIds = ids.
-                      Where(Function(x) x.IntegerValue <> id.IntegerValue).
-                      Select(Function(x) x.IntegerValue.ToString()).
+                      Where(Function(x) ElementIdCompat.GetIntId(x) <> idInt).
+                      Select(Function(x) ElementIdCompat.GetIntId(x).ToString()).
                       ToArray()
 
                     rows.Add(New DupRowDto With {
-                      .ElementId = id.IntegerValue,
+                      .ElementId = idInt,
                       .Category = catName,
                       .Family = famName,
                       .Type = typName,
@@ -189,7 +190,7 @@ Namespace UI.Hub
             Dim idVal As Integer = SafeInt(GetProp(payload, "id"))
             If idVal <= 0 Then Return
 
-            Dim elId As New ElementId(idVal)
+            Dim elId As ElementId = ElementIdCompat.FromInt(idVal)
             Dim el As Element = uiDoc.Document.GetElement(elId)
             If el Is Nothing Then
                 SendToWeb("host:warn", New With {.message = $"요소 {idVal} 을(를) 찾을 수 없습니다."})
@@ -205,7 +206,7 @@ Namespace UI.Hub
             Try
                 If bb IsNot Nothing Then
                     Dim views = uiDoc.GetOpenUIViews()
-                    Dim target = views.FirstOrDefault(Function(v) v.ViewId.IntegerValue = uiDoc.ActiveView.Id.IntegerValue)
+                    Dim target = views.FirstOrDefault(Function(v) ElementIdCompat.GetIntId(v.ViewId) = ElementIdCompat.GetIntId(uiDoc.ActiveView.Id))
                     If target IsNot Nothing Then
                         target.ZoomAndCenterRectangle(bb.Min, bb.Max)
                     Else
@@ -236,7 +237,7 @@ Namespace UI.Hub
             Dim eidList As New List(Of ElementId)
             For Each i In ids
                 If i > 0 Then
-                    Dim eid As New ElementId(i)
+                    Dim eid As ElementId = ElementIdCompat.FromInt(i)
                     If doc.GetElement(eid) IsNot Nothing Then eidList.Add(eid)
                 End If
             Next
@@ -261,10 +262,11 @@ Namespace UI.Hub
 
             For Each eid In eidList
                 If doc.GetElement(eid) Is Nothing Then
-                    actuallyDeleted.Add(eid.IntegerValue)
-                    Dim row = _lastRows.FirstOrDefault(Function(r) r.ElementId = eid.IntegerValue)
+                    Dim eidInt As Integer = ElementIdCompat.GetIntId(eid)
+                    actuallyDeleted.Add(eidInt)
+                    Dim row = _lastRows.FirstOrDefault(Function(r) r.ElementId = eidInt)
                     If row IsNot Nothing Then row.Deleted = True
-                    SendToWeb("dup:deleted", New With {.id = eid.IntegerValue})
+                    SendToWeb("dup:deleted", New With {.id = eidInt})
                 End If
             Next
 
@@ -420,7 +422,8 @@ Namespace UI.Hub
                 Try
                     ' 상위 패밀리(호스트)에 붙은 서브컴포넌트는 스킵
                     If fi.SuperComponent IsNot Nothing Then Return True
-                    If _nestedSharedIds IsNot Nothing AndAlso _nestedSharedIds.Contains(fi.Id.IntegerValue) Then Return True
+                    Dim fiId As Integer = ElementIdCompat.GetIntId(fi.Id)
+                    If _nestedSharedIds IsNot Nothing AndAlso _nestedSharedIds.Contains(fiId) Then Return True
                 Catch
                 End Try
             End If
@@ -546,7 +549,7 @@ Namespace UI.Hub
 
         Private Shared Function SafeCategoryName(e As Element, cache As Dictionary(Of Integer, String)) As String
             If e Is Nothing OrElse e.Category Is Nothing Then Return ""
-            Dim id As Integer = e.Category.Id.IntegerValue
+            Dim id As Integer = ElementIdCompat.GetIntId(e.Category.Id)
             Dim s As String = Nothing
             If cache.TryGetValue(id, s) Then Return s
             s = e.Category.Name
@@ -557,7 +560,7 @@ Namespace UI.Hub
         Private Shared Function SafeFamilyName(e As Element, cache As Dictionary(Of Integer, String)) As String
             Dim fi = TryCast(e, FamilyInstance)
             If fi Is Nothing OrElse fi.Symbol Is Nothing OrElse fi.Symbol.Family Is Nothing Then Return ""
-            Dim id As Integer = fi.Symbol.Family.Id.IntegerValue
+            Dim id As Integer = ElementIdCompat.GetIntId(fi.Symbol.Family.Id)
             Dim s As String = Nothing
             If cache.TryGetValue(id, s) Then Return s
             s = fi.Symbol.Family.Name
@@ -568,7 +571,7 @@ Namespace UI.Hub
         Private Shared Function SafeTypeName(e As Element, cache As Dictionary(Of Integer, String)) As String
             Dim fi = TryCast(e, FamilyInstance)
             If fi IsNot Nothing AndAlso fi.Symbol IsNot Nothing Then
-                Dim id As Integer = fi.Symbol.Id.IntegerValue
+                Dim id As Integer = ElementIdCompat.GetIntId(fi.Symbol.Id)
                 Dim s As String = Nothing
                 If cache.TryGetValue(id, s) Then Return s
                 s = fi.Symbol.Name
@@ -584,7 +587,7 @@ Namespace UI.Hub
                 If p IsNot Nothing Then
                     Dim lvid As ElementId = p.AsElementId()
                     If lvid IsNot Nothing AndAlso lvid <> ElementId.InvalidElementId Then
-                        Return lvid.IntegerValue
+                        Return ElementIdCompat.GetIntId(lvid)
                     End If
                 End If
             Catch
@@ -594,7 +597,7 @@ Namespace UI.Hub
                 If pi IsNot Nothing Then
                     Dim id = TryCast(pi.GetValue(e, Nothing), ElementId)
                     If id IsNot Nothing AndAlso id <> ElementId.InvalidElementId Then
-                        Return id.IntegerValue
+                        Return ElementIdCompat.GetIntId(id)
                     End If
                 End If
             Catch
