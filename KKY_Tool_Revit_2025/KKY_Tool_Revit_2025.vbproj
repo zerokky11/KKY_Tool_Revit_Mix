@@ -3,7 +3,10 @@
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
-		<RootNamespace>KKY_Tool_Revit</RootNamespace>
+
+		<!-- RootNamespace 비움: KKY_Tool_Revit.App 이 정확한 풀네임이 되도록 -->
+		<RootNamespace></RootNamespace>
+
 		<AssemblyName>KKY_Tool_Revit_2025</AssemblyName>
 
 		<!-- 상위 bin\Rvt2025 아래에 DLL 출력 -->
@@ -73,12 +76,14 @@
 
 	<!-- 코드: 2019-2023 프로젝트 VB 파일을 링크로 공유 + 2025 전용 Compat -->
 	<ItemGroup>
-                <!-- 2025 전용 Compat (이 프로젝트 안에 유지) -->
-                <Compile Include="Compat\JavaScriptSerializer.vb" />
-                <Compile Include="Compat\BuiltInParameterGroupCompat.vb" />
-                <Compile Include="..\KKY_Tool_Revit_2019-2023\Infrastructure\ElementIdCompat.vb">
-                        <Link>Infrastructure\ElementIdCompat.vb</Link>
-                </Compile>
+		<!-- 2025 전용 Compat (이 프로젝트 안에 유지) -->
+		<Compile Include="Compat\JavaScriptSerializer.vb" />
+		<Compile Include="Compat\BuiltInParameterGroupCompat.vb" />
+
+		<!-- 공용 ElementId 호환 헬퍼: 2019-2023 쪽 파일을 링크 -->
+		<Compile Include="..\KKY_Tool_Revit_2019-2023\Infrastructure\ElementIdCompat.vb">
+			<Link>Infrastructure\ElementIdCompat.vb</Link>
+		</Compile>
 
 		<!-- 공통 App / Commands (2019-2023에서 링크) -->
 		<Compile Include="..\KKY_Tool_Revit_2019-2023\APP.vb">
@@ -142,7 +147,7 @@
 		</Compile>
 	</ItemGroup>
 
-	<!-- 리소스 / HubUI -->
+	<!-- 리소스 / HubUI : 2019-2023 프로젝트의 HubUI 폴더를 그대로 링크해서 사용 -->
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\icons\hub_16.png" Link="Resources\icons\hub_16.png" Condition="Exists('Resources\icons\hub_16.png')">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -156,8 +161,9 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</EmbeddedResource>
 
-		<!-- 2025용 HubUI 리소스 (필요하면 유지) -->
-		<Content Include="Resources\HubUI\**\*" Link="Resources\HubUI\%(RecursiveDir)%(Filename)%(Extension)">
+		<!-- ★ 여기 핵심: 2019-2023의 HubUI 폴더를 링크 -->
+		<Content Include="..\KKY_Tool_Revit_2019-2023\Resources\HubUI\**\*">
+			<Link>Resources\HubUI\%(RecursiveDir)%(Filename)%(Extension)</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>

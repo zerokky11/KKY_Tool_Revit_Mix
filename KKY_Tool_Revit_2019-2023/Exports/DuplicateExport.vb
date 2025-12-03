@@ -1,7 +1,8 @@
 ﻿Imports System.Data
 Imports System.Linq
 Imports KKY_Tool_Revit.Infrastructure
-
+Imports Services
+Imports Infrastructure
 Namespace Exports
 
     Public Class DupRowDto

@@ -10,7 +10,7 @@ Imports Autodesk.Revit.DB
 Imports Autodesk.Revit.UI
 Imports KKY_Tool_Revit.Exports
 Imports KKY_Tool_Revit.Infrastructure
-
+Imports Infrastructure   ' ← 이 줄 추가
 ' ✅ WPF 팝업(별칭 import로 Color 충돌 회피)
 Imports WPF = System.Windows
 Imports WControls = System.Windows.Controls
