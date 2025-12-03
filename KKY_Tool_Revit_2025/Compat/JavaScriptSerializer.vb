@@ -44,24 +44,23 @@ Namespace Global.System.Web.Script.Serialization
         Private Shared Function ConvertNode(node As JsonNode) As Object
             If node Is Nothing Then Return Nothing
 
-            Select Case node.GetType()
-                Case GetType(JsonValue)
-                    Return ConvertValue(CType(node, JsonValue))
-                Case GetType(JsonObject)
-                    Dim dict As New Dictionary(Of String, Object)(StringComparer.OrdinalIgnoreCase)
-                    For Each kv In CType(node, JsonObject)
-                        dict(kv.Key) = ConvertNode(kv.Value)
-                    Next
-                    Return dict
-                Case GetType(JsonArray)
-                    Dim list As New List(Of Object)()
-                    For Each child In CType(node, JsonArray)
-                        list.Add(ConvertNode(child))
-                    Next
-                    Return list
-                Case Else
-                    Return node.ToJsonString()
-            End Select
+            If TypeOf node Is JsonValue Then
+                Return ConvertValue(CType(node, JsonValue))
+            ElseIf TypeOf node Is JsonObject Then
+                Dim dict As New Dictionary(Of String, Object)(StringComparer.OrdinalIgnoreCase)
+                For Each kv In CType(node, JsonObject)
+                    dict(kv.Key) = ConvertNode(kv.Value)
+                Next
+                Return dict
+            ElseIf TypeOf node Is JsonArray Then
+                Dim list As New List(Of Object)()
+                For Each child In CType(node, JsonArray)
+                    list.Add(ConvertNode(child))
+                Next
+                Return list
+            Else
+                Return node.ToJsonString()
+            End If
         End Function
 
         Private Shared Function ConvertValue(value As JsonValue) As Object
