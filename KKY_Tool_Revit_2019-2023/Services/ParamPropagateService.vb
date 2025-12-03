@@ -1308,6 +1308,8 @@ Namespace Services
 
             If anyByName Is Nothing Then
                 result.ErrorMessage = "동일 이름 파라미터를 찾을 수 없음(임시 생성 실패)."
+
+
                 Return result
             End If
 
@@ -1325,8 +1327,15 @@ Namespace Services
                 fm.Parameters.Cast(Of FamilyParameter)().
                 FirstOrDefault(Function(x) x.Definition IsNot Nothing AndAlso
                                            String.Equals(x.Definition.Name, extDef.Name, StringComparison.OrdinalIgnoreCase))
+#If REVIT2025 Then
             Dim okNow As Boolean =
-                (corrected IsNot Nothing AndAlso corrected.IsShared AndAlso corrected.Definition.ParameterGroup = groupPG)
+                (corrected IsNot Nothing AndAlso corrected.IsShared AndAlso
+                 BuiltInParameterGroupCompat.IsInGroup(corrected.Definition, groupPG))
+#Else
+            Dim okNow As Boolean =
+                (corrected IsNot Nothing AndAlso corrected.IsShared AndAlso
+                 corrected.Definition.ParameterGroup = groupPG)
+#End If
 
             If okNow AndAlso Not replaceFailed Then
                 result.FinalOk = True
@@ -1360,7 +1369,13 @@ Namespace Services
                 FirstOrDefault(Function(x) x.Definition IsNot Nothing AndAlso
                                            x.IsShared AndAlso
                                            String.Equals(x.Definition.Name, extDef.Name, StringComparison.OrdinalIgnoreCase))
-            result.FinalOk = (corrected IsNot Nothing AndAlso corrected.Definition.ParameterGroup = groupPG)
+#If REVIT2025 Then
+            result.FinalOk = (corrected IsNot Nothing AndAlso
+                              BuiltInParameterGroupCompat.IsInGroup(corrected.Definition, groupPG))
+#Else
+            result.FinalOk = (corrected IsNot Nothing AndAlso
+                              corrected.Definition.ParameterGroup = groupPG)
+#End If
             Return result
         End Function
 
